@@ -24,7 +24,6 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.STSourceType;
 
 public class addColumn {
 	
@@ -44,8 +43,7 @@ public class addColumn {
 		String columnName = "code";										// 컬럼이름
 		String sggCd = getSggCode(sggNm);
 		
-		// 시군구 이름 잘못입력 시 예외처리
-		if(sggCd == null || sggCd.equals("")) throw new Exception("시군구 이름을 정확하게 입력해주세요.");
+		
 		
 		// 확장자에 따라 실행 함수가 다르다.
 		if(ext.equals("csv")) {
@@ -272,6 +270,11 @@ public class addColumn {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+		}
+		
+		// 시군구 이름 잘못 입력시 예외처리
+		if(sggCd == null || sggCd.equals("")) {
+			throw new Exception("시군구 이름을 정확하게 입력해주세요.");
 		}
 		
 		return sggCd;
