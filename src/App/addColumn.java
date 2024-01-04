@@ -24,12 +24,23 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.STSourceType;
 
 public class addColumn {
+	
+	/**
+	 * @since 2023-01-04
+	 * @author 강현선
+	 * @param args[0] 파일 경로 및 이름
+	 * @param args[1] 시군구이름
+	 * 
+	 * csv 또는 excel 파일에 시군구코드 컬럼 추가
+	 * 
+	 */
 	public static void main(String[] args) throws Exception {
-		String sggNm = args[1];											// 시군구 이름
-		String filePath = args[0];										// filePath
+		String filePath = args[0];										// 파일 경로 및 이름
 		String ext = args[0].substring(args[0].lastIndexOf(".") + 1);	// 확장자
+		String sggNm = args[1];											// 시군구 이름
 		String columnName = "code";										// 컬럼이름
 		
 		// 확장자에 따라 실행 함수가 다르다.
@@ -53,7 +64,7 @@ public class addColumn {
 	 * CSV 파일에 지자체 코드 칼럼 추가
 	 */
 	public static void addColumnToCSV(String filePath, String columnName, String sggCd) {
-		System.out.println("readCSVFile ::::::::::::::::::::");
+		System.out.println("========== CSV 파일 읽기 시작 ==========");
 
 		List<List<String>> list = new ArrayList<List<String>>();
 		BufferedReader bufferedReader = null;
@@ -89,8 +100,6 @@ public class addColumn {
 				
 				// 최종 결과 리스트에 추가
 				list.add(stringList);
-				
-				System.out.println();
 			}
 			
 			// 파일 쓰기, UTF-8 인코딩
@@ -112,7 +121,11 @@ public class addColumn {
 				// 한 줄 씩 쓰기
 				bufferedWriter.write(String.join(",", list.get(i)));
 				bufferedWriter.newLine();
+				
 			}
+			
+			// 확인
+			System.out.println(list.toString());
 
 			// 자원 반환
 			if(bufferedReader != null) bufferedReader.close();
@@ -121,9 +134,10 @@ public class addColumn {
 				bufferedWriter.close();
 			}
 			
+			System.out.println("========== CSV 파일 읽기 종료 ==========");
+			
 		} catch (IOException e) {
 			e.printStackTrace();
-			
 		}
 	}
 	
@@ -139,7 +153,7 @@ public class addColumn {
 	 * xlsx 파일에 지자체 코드 칼럼 추가
 	 */
 	public static void addColumnToExcel(String filePath, String columnName, String sggCd) {
-		System.out.println("===== CSV파일 읽기시작 =====");
+		System.out.println("========== Excel 파일 읽기 시작 ==========");
 		try {
 			FileInputStream in = new FileInputStream(new File(filePath));
 
@@ -154,29 +168,27 @@ public class addColumn {
 			
 			// 모든 행(row)들을 조회한다.
 			for (Row row : sheet) {
-				// 각각의 행에 존재하는 모든 열(cell)을 순회한다.
+				
+				// 지자체 코드 이미 존재시 삭제
 				Iterator<Cell> cellIterator = row.cellIterator();
 				while (cellIterator.hasNext()) {
 					Cell cell = cellIterator.next();
-
-					// cell의 타입에따라 값을 가져온다.
 					switch (cell.getCellType()) {
 						case NUMERIC:
-							// System.out.print((int) cell.getNumericCellValue() + "\t");
 							break;
 						case STRING:
+							System.out.print(cell.getStringCellValue() + "\t");
+							
 							// 지자체 코드 칼럼 존재 시 첫 row 셀삭제
-							if(cell.getStringCellValue().equals(columnName) && row.getRowNum() == 0) {
+							if(row.getRowNum() == 0 && cell.getStringCellValue().equals(columnName)) {
 								delColNum = cell.getColumnIndex();
 								row.removeCell(cell); 
-							}
-							
-							// 지자체 코드 칼럼 존재 시 나머지 row 셀삭제
-							if(row.getRowNum() != 0 && cell.getColumnIndex() == delColNum) {
+							} else if(row.getRowNum() != 0 && cell.getColumnIndex() == delColNum) {
 								row.removeCell(cell);
+								System.out.print(sggCd + "\t");
 							}
-							// System.out.print(cell.getStringCellValue() + "\t");
 							break;
+						default: break;
 					}
 				}
 				System.out.println();
@@ -188,12 +200,14 @@ public class addColumn {
 					row.createCell(row.getLastCellNum()).setCellValue(sggCd);
 				}
 				
-				
 			}
 			
 			// 파일 쓰기
 			FileOutputStream out = new FileOutputStream(filePath);
 			workbook.write(out);
+
+			// 확인
+			System.out.println("========== Excel 파일 읽기 종료 ==========");
 
 			// 자원 반환
 			if(out != null) out.close();
