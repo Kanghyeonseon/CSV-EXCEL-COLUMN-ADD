@@ -42,13 +42,17 @@ public class addColumn {
 		String ext = args[0].substring(args[0].lastIndexOf(".") + 1);	// 확장자
 		String sggNm = args[1];											// 시군구 이름
 		String columnName = "code";										// 컬럼이름
+		String sggCd = getSggCode(sggNm);
+		
+		// 시군구 이름 잘못입력 시 예외처리
+		if(sggCd == null || sggCd.equals("")) throw new Exception("시군구 이름을 정확하게 입력해주세요.");
 		
 		// 확장자에 따라 실행 함수가 다르다.
 		if(ext.equals("csv")) {
-			addColumnToCSV(filePath, columnName, getSggCode(sggNm));
+			addColumnToCSV(filePath, columnName, sggCd);
 			
 		} else if(ext.equals("xlsx")) {
-			addColumnToExcel(filePath, columnName, getSggCode(sggNm));
+			addColumnToExcel(filePath, columnName, sggCd);
 		}
 		
 	}
@@ -157,35 +161,35 @@ public class addColumn {
 		try {
 			FileInputStream in = new FileInputStream(new File(filePath));
 
-			// 엑셀 파일로 Workbook instance를 생성
+			// 엑셀파일로 Workbook 인스턴스 생성
 			XSSFWorkbook workbook = new XSSFWorkbook(in);
 
-			// workbook의 첫번째 sheet를 가저온다.
+			// 첫번째 sheet를 가저온다.
 			XSSFSheet sheet = workbook.getSheetAt(0);
 
-			// 지자체코드 칼럼 존재 시 삭제 할 칼럼 인덱스
+			// 지자체코드 칼럼 존재 시 삭제 할 컬럼의 인덱스
 			int delColNum = -1;
 			
 			// 모든 행(row)들을 조회한다.
 			for (Row row : sheet) {
 				
-				// 지자체 코드 이미 존재시 삭제
+				// 이터레이터 생성 및 순회
 				Iterator<Cell> cellIterator = row.cellIterator();
 				while (cellIterator.hasNext()) {
 					Cell cell = cellIterator.next();
 					switch (cell.getCellType()) {
 						case NUMERIC:
+							System.out.print((int) cell.getNumericCellValue() + "\t");
 							break;
 						case STRING:
 							System.out.print(cell.getStringCellValue() + "\t");
 							
-							// 지자체 코드 칼럼 존재 시 첫 row 셀삭제
+							// 지자체 코드 이미 존재시 삭제
 							if(row.getRowNum() == 0 && cell.getStringCellValue().equals(columnName)) {
 								delColNum = cell.getColumnIndex();
 								row.removeCell(cell); 
 							} else if(row.getRowNum() != 0 && cell.getColumnIndex() == delColNum) {
 								row.removeCell(cell);
-								System.out.print(sggCd + "\t");
 							}
 							break;
 						default: break;
@@ -206,13 +210,12 @@ public class addColumn {
 			FileOutputStream out = new FileOutputStream(filePath);
 			workbook.write(out);
 
-			// 확인
-			System.out.println("========== Excel 파일 읽기 종료 ==========");
-
 			// 자원 반환
 			if(out != null) out.close();
 			if(in != null) in.close();
 			if(workbook != null) workbook.close();
+			
+			System.out.println("========== Excel 파일 읽기 종료 ==========");
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -228,7 +231,7 @@ public class addColumn {
 	 * 시군구 이름으로 시군구 코드 가져오기
 	 * @throws SQLException 
 	 */
-	private static String getSggCode(String sggNm) throws SQLException {
+	private static String getSggCode(String sggNm) throws Exception {
 		Connection con = null;
 		Statement st = null;
 		ResultSet rs = null;
@@ -243,6 +246,7 @@ public class addColumn {
 		
 		// 시군구 코드 결과
 		String sggCd = null;
+		
 		// 연결
 		try {
 			con = DriverManager.getConnection(url, user, password);
@@ -251,14 +255,13 @@ public class addColumn {
 			rs = pstmt.executeQuery();
 			
 			if (rs.next()) {
-				// 첫번째 값에 시군구 코드가 출력된다.
-				// 나머지 값들은 지금은 필요없어서 내버려뒀음
+				// 첫번째 값에 시군구 코드가 출력된다. 나머지 값들은 지금은 필요없어서 내버려뒀음
 				sggCd = rs.getString(1);
 				System.out.println(sggNm + "의 시군구 코드 : " + rs.getString(1));
 			}
 		
-		} catch (SQLException e) {
-			throw new SQLException("SQL Exception...");
+		} catch (Exception e) {
+			e.printStackTrace();
 		
 		// 자원 반환
 		} finally {
@@ -266,8 +269,8 @@ public class addColumn {
 				if (rs != null) rs.close();
 				if (st != null) st.close();
 				if (con != null) con.close();
-			} catch (SQLException ex) {
-				throw new SQLException("SQL Exception...");
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 		
